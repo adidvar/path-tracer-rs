@@ -1,5 +1,3 @@
-pub mod renderer;
-pub mod wgpu_context;
-pub mod wgpu_surface;
+pub mod ui_manager;
 pub mod window;
 pub mod window_gen;

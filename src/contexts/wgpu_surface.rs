@@ -4,7 +4,7 @@ use log::info;
 use std::sync::Arc;
 use winit::window::Window;
 
-use crate::interface::wgpu_context::WGPUApplicationContext;
+use crate::WGPUApplicationContext;
 
 pub struct WGPUWindowContext {
     pub surface: wgpu::Surface<'static>,
