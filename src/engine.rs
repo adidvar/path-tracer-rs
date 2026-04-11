@@ -1,4 +1,4 @@
-pub mod compute_noise_pass;
+pub mod compute_path_trace;
+pub mod gpu_dto;
 pub mod render_pass;
-pub mod render_settings;
 pub mod tone_mapping_pass;

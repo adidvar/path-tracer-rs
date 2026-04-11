@@ -1,4 +1,3 @@
-use log::warn;
 use wgpu::{SurfaceTexture, TextureView};
 
 use crate::{WGPUApplicationContext, WGPUWindowContext};
@@ -18,7 +17,6 @@ impl<'a> WGPUPassContext<'a> {
         let surface_object = window.surface.get_current_texture();
 
         let wgpu::CurrentSurfaceTexture::Success(surface_texture) = surface_object else {
-            warn!("Failed to get surface texture to get view");
             return None;
         };
 

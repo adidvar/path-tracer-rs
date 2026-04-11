@@ -1,9 +1,7 @@
 use egui_wgpu::{Renderer, RendererOptions};
 use egui_winit::State;
 
-use crate::{
-    RenderPass, RenderSettings, WGPUApplicationContext, WGPUPassContext, WGPUWindowContext,
-};
+use crate::{AppSettings, RenderPass, WGPUApplicationContext, WGPUPassContext, WGPUWindowContext};
 
 pub struct UIEventResponse {
     pub consumed: bool,
@@ -123,7 +121,7 @@ impl RenderPass for UIManager {
         self.screen_descriptor.size_in_pixels = [width, height];
     }
 
-    fn render(&mut self, ctx: &mut WGPUPassContext, _state: &RenderSettings) {
+    fn render(&mut self, ctx: &mut WGPUPassContext, _state: &AppSettings) {
         let rpass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("EGUI Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {

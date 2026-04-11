@@ -27,10 +27,10 @@ struct ApplicationWindowHandler {
     window: Option<WGPUWindowContext>,
 
     ui_manager: Option<UIManager>,
-    compute_pass: Option<ComputeNoisePass>,
+    compute_pass: Option<ComputePathTracePass>,
     post_process_pass: Option<PostProcessPass>,
 
-    settings: RenderSettings,
+    settings: AppSettings,
 }
 
 impl ApplicationWindowHandler {
@@ -41,7 +41,7 @@ impl ApplicationWindowHandler {
             ui_manager: None,
             compute_pass: None,
             post_process_pass: None,
-            settings: RenderSettings::default(),
+            settings: AppSettings::default(),
         })
     }
 }
@@ -64,7 +64,12 @@ impl ApplicationHandler for ApplicationWindowHandler {
             let height = w_ctx.surface_configuration.height;
             let format = w_ctx.surface_configuration.format;
 
-            let compute_p = ComputeNoisePass::new(&self.context, width, height);
+            let compute_p = ComputePathTracePass::new(
+                &self.context,
+                width,
+                height,
+                &GpuSceneData::from_dto(&load_scene_into_settings(&mut self.settings), width, height),
+            );
             let mut post_p = PostProcessPass::new(&self.context, format);
 
             post_p.update_bind_group(&self.context.device, compute_p.get_view());
@@ -122,6 +127,8 @@ impl ApplicationHandler for ApplicationWindowHandler {
             }
 
             WindowEvent::RedrawRequested => {
+                let start_time = std::time::Instant::now();
+
                 ui_m.prepare(&mut self.context, w_ctx, |ctx| {
                     generate_window_interface(ctx, &mut self.settings);
                 });
@@ -134,6 +141,8 @@ impl ApplicationHandler for ApplicationWindowHandler {
                     compute.render(&mut pass_ctx, &self.settings);
                 }
 
+                self.settings.camera_dirty = false;
+
                 if let Some(post) = &mut self.post_process_pass {
                     post.render(&mut pass_ctx, &self.settings);
                 }
@@ -141,6 +150,10 @@ impl ApplicationHandler for ApplicationWindowHandler {
                 ui_m.render(&mut pass_ctx, &self.settings);
 
                 pass_ctx.finish();
+
+                self.settings.render_time_ms = start_time.elapsed().as_secs_f32() * 1000.0;
+                
+                w_ctx.window.request_redraw();
             }
             _ => (),
         }

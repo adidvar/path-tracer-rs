@@ -1,4 +1,4 @@
-use crate::{ASSETS_DIR, RenderPass, RenderSettings, WGPUApplicationContext, WGPUPassContext};
+use crate::{ASSETS_DIR, AppSettings, RenderPass, WGPUApplicationContext, WGPUPassContext};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -119,7 +119,7 @@ impl PostProcessPass {
 impl RenderPass for PostProcessPass {
     fn resize(&mut self, _ctx: &WGPUApplicationContext, _width: u32, _height: u32) {}
 
-    fn render(&mut self, ctx: &mut WGPUPassContext, state: &RenderSettings) {
+    fn render(&mut self, ctx: &mut WGPUPassContext, state: &AppSettings) {
         let Some(bind_group) = &self.bind_group else {
             return;
         };
