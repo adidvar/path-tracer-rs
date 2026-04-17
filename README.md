@@ -1,4 +1,4 @@
-# Rust Path Tracer 
+# [Rust Path Tracer](https://adidvar.github.io/path-tracer-rs/) 
 
 A small path tracing demo using Rust, wgpu and egui.
 It can run on desktop (macOS / Windows / Linux) and in the browser via WebAssembly.
