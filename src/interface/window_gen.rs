@@ -20,19 +20,13 @@ pub fn generate_window_interface(context: &egui::Context, settings: &mut AppSett
             settings.camera_dirty = true;
         }
         if ui
-            .add(
-                egui::Slider::new(&mut settings.max_bounces, 1..=16)
-                    .text("Max Bounces"),
-            )
+            .add(egui::Slider::new(&mut settings.max_bounces, 1..=16).text("Max Bounces"))
             .changed()
         {
             settings.camera_dirty = true;
         }
         if ui
-            .add(
-                egui::Slider::new(&mut settings.rays_per_pixel, 1..=100)
-                    .text("Rays Per Pixel"),
-            )
+            .add(egui::Slider::new(&mut settings.rays_per_pixel, 1..=100).text("Rays Per Pixel"))
             .changed()
         {
             settings.camera_dirty = true;

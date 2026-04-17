@@ -23,29 +23,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-          
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Setup Trunk
         uses: jetli/trunk-action@v0.5.0
         with:
           version: 'latest'
-          
+
       - name: Build Web Target
-        run: trunk build web/index.html --release --public-url /${{ github.event.repository.name }}/
-        working-directory: wgpu-engine
-        
+        run: trunk build --release --public-url /${{ github.event.repository.name }}/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'wgpu-engine/dist'
-          
+          path: 'dist'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

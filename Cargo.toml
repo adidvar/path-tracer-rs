@@ -4,29 +4,35 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-winit = "0.30"
-pollster = "0.4"
+wgpu = { version = "29.0.1", features = ["webgl"] }
+winit = { version = "0.30", features = ["rwh_06"] }
+pollster = { version = "0.4", features = ["macro"] }
+
+egui = "0.34.1"
+egui-wgpu = "0.34.1"
 
 glam = { version = "0.32", features = ["bytemuck", "serde"] }
 bytemuck = { version = "1.21", features = ["derive"] }
 
-egui = "0.34.1"
-egui-wgpu = "0.34.1"
+anyhow = "1.0.102"
+include_dir = "0.7.4"
+log = "0.4"
+env_logger = "0.11"
+console_log = "1.0"
+web-time = "1.1"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tobj = "4.0"
 image = "0.25"
 
-include_dir = "0.7.4"
-
-log = "0.4"
-env_logger = "0.11"
-console_log = "1.0"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 egui-winit = "0.34.1"
-anyhow = "1.0.102"
-wgpu = "29.0.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+egui-winit = { version = "0.34.1", default-features = false }
+getrandom = { version = "0.3", features = ["wasm_js"] }
 wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlCanvasElement"] }
 console_error_panic_hook = "0.1.7"

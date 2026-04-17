@@ -3,7 +3,6 @@ use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::*;
-use winit::window::Window;
 use winit::window::WindowId;
 
 use crate::*;
@@ -11,51 +10,55 @@ use crate::*;
 const WINDOW_START_SIZE: LogicalSize<u32> = LogicalSize::new(800, 800);
 const WINDOW_START_TITLE: &str = "Path tracer application";
 
-pub fn start_application() -> anyhow::Result<()> {
+pub struct ApplicationWindowHandler {
+    context: WGPUApplicationContext,
+    window: Option<WGPUWindowContext>,
+
+pub fn start_application_with_context(context: WGPUApplicationContext) -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    event_loop.set_control_flow(ControlFlow::Wait);
+    event_loop.set_control_flow(ControlFlow::Poll);
 
-    let mut app = ApplicationWindowHandler::new()?;
+pub async fn new_application() -> anyhow::Result<ApplicationWindowHandler> {
+    Ok(ApplicationWindowHandler {
+        context: WGPUApplicationContext::new().await?,
+        window: None,
+        ui_manager: None,
+        compute_pass: None,
+        post_process_pass: None,
+        settings: AppSettings::default(),
+    })
+}
 
-    event_loop.run_app(&mut app)?;
+pub fn start_application(mut application: ApplicationWindowHandler) -> anyhow::Result<()> {
+    let event_loop =
+        EventLoop::new().context("Failed to create event loop for starting the application")?;
+    event_loop.set_control_flow(ControlFlow::Poll);
+
+    event_loop
+        .run_app(&mut application)
+        .context("Failed while running the application event loop")?;
 
     Ok(())
 }
 
-struct ApplicationWindowHandler {
-    context: WGPUApplicationContext,
-    window: Option<WGPUWindowContext>,
+pub fn spawn_application(mut application: ApplicationWindowHandler) -> anyhow::Result<()> {
+    let event_loop =
+        EventLoop::new().context("Failed to create event loop for spawning the application")?;
+    event_loop.set_control_flow(ControlFlow::Poll);
 
-    ui_manager: Option<UIManager>,
-    compute_pass: Option<ComputePathTracePass>,
-    post_process_pass: Option<PostProcessPass>,
+    event_loop
+        .run_app(&mut application)
+        .context("Failed while spawning the application event loop")?;
 
-    settings: AppSettings,
-}
-
-impl ApplicationWindowHandler {
-    pub fn new() -> anyhow::Result<Self> {
-        Ok(Self {
-            context: WGPUApplicationContext::new().context("Failed to init wgpu context")?,
-            window: None,
-            ui_manager: None,
-            compute_pass: None,
-            post_process_pass: None,
-            settings: AppSettings::default(),
-        })
-    }
+    Ok(())
 }
 
 impl ApplicationHandler for ApplicationWindowHandler {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
-            let window_obj = event_loop
-                .create_window(
-                    Window::default_attributes()
-                        .with_inner_size(WINDOW_START_SIZE)
-                        .with_title(WINDOW_START_TITLE),
-                )
-                .unwrap();
+            #[allow(unused_mut)]
+            let mut attributes = window_attributes(WINDOW_START_SIZE, WINDOW_START_TITLE);
+            let window_obj = event_loop.create_window(attributes).unwrap();
 
             let w_ctx = WGPUWindowContext::new(&self.context, window_obj).unwrap();
             let ui_m = UIManager::new(&self.context, &w_ctx);
@@ -68,7 +71,11 @@ impl ApplicationHandler for ApplicationWindowHandler {
                 &self.context,
                 width,
                 height,
-                &GpuSceneData::from_dto(&load_scene_into_settings(&mut self.settings), width, height),
+                &GpuSceneData::from_dto(
+                    &load_scene_into_settings(&mut self.settings),
+                    width,
+                    height,
+                ),
             );
             let mut post_p = PostProcessPass::new(&self.context, format);
 
@@ -127,7 +134,7 @@ impl ApplicationHandler for ApplicationWindowHandler {
             }
 
             WindowEvent::RedrawRequested => {
-                let start_time = std::time::Instant::now();
+                let start_time = web_time::Instant::now();
 
                 ui_m.prepare(&mut self.context, w_ctx, |ctx| {
                     generate_window_interface(ctx, &mut self.settings);
@@ -152,7 +159,7 @@ impl ApplicationHandler for ApplicationWindowHandler {
                 pass_ctx.finish();
 
                 self.settings.render_time_ms = start_time.elapsed().as_secs_f32() * 1000.0;
-                
+
                 w_ctx.window.request_redraw();
             }
             _ => (),

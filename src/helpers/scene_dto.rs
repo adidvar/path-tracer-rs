@@ -50,7 +50,7 @@ pub struct MeshDto {
 pub struct CameraDto {
     pub position: Vec3,
     pub rotation_angles: Vec3,
-    pub fov: f32, 
+    pub fov: f32,
 
     pub aperture: f32,
     pub focus_distance: f32,

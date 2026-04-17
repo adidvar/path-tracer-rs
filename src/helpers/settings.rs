@@ -19,7 +19,7 @@ impl AppSettings {
     pub fn default() -> AppSettings {
         AppSettings {
             enable_tonemapping: true,
-            enable_gamma: false, 
+            enable_gamma: false,
             time: 0.0,
             render_scene: "scene".to_owned(),
             camera: CameraDto::default(),
