@@ -1,26 +1,24 @@
-# Rust Path Tracer (WGPU)
+# Rust Path Tracer 
 
-A cross-platform, physically based path tracer written in Rust using WGPU and egui. It supports rendering to Native environments (macOS/Windows/Linux) and WebAssembly (via Trunk).
+A small path tracing demo using Rust, wgpu and egui.
+It can run on desktop (macOS / Windows / Linux) and in the browser via WebAssembly.
 
-## Features
-- **Physically Based Rendering (PBR)**: Uses GGX Microfacet distribution, Schlick's Fresnel approximation, and Smith's Geometry function.
-- **Progressive Accumulation**: Seamlessly computes N-bounces across interactive time-steps.
-- **Anti-aliasing (MSAA)**: Stochastic Sub-pixel jitter combined with aperture DoF.
-- **Live GUI**: Fully dynamic `egui` integration controlling camera settings, materials, ray limits, and rendering statistics.
+Prerequisites
+- Rust toolchain (stable)
+- For web: add the wasm target and install Trunk
+  - `rustup target add wasm32-unknown-unknown`
+  - `cargo install trunk`
 
-## Building and Running
+Running (Desktop)
+- Build and run with Cargo:
+  - `cargo run` (debug)
+  - `cargo run --release` (optimized)
 
-### Native (Desktop)
-Ensure you have the latest Rust toolchain installed.
-```bash
-cargo run --release
-```
+Running (Web)
+- Use Trunk to build and serve:
+  - `trunk serve web/index.html --release`
+- Open the address printed by Trunk in a modern browser.
 
-### WebAssembly (GitHub Pages or Local Web)
-This project requires [Trunk](https://trunkrs.dev/) and the `wasm32-unknown-unknown` target.
-```bash
-rustup target add wasm32-unknown-unknown
-cargo install trunk
-trunk serve web/index.html --release
-```
-Then navigate to `http://127.0.0.1:8080` in your browser.
+Notes
+- If GPU initialization fails, check your system drivers (desktop) or WebGPU support in your browser (web).
+- Shaders and assets live in `assets/` and must be available to the build tool you use.

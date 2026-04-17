@@ -12,7 +12,7 @@ egui = "0.34.1"
 egui-wgpu = "0.34.1"
 
 glam = { version = "0.32", features = ["bytemuck", "serde"] }
-bytemuck = { version = "1.21", features = ["derive"] }
+bytemuck = { version = "1.25", features = ["derive"] }
 
 anyhow = "1.0.102"
 include_dir = "0.7.4"

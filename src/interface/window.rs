@@ -14,9 +14,12 @@ pub struct ApplicationWindowHandler {
     context: WGPUApplicationContext,
     window: Option<WGPUWindowContext>,
 
-pub fn start_application_with_context(context: WGPUApplicationContext) -> anyhow::Result<()> {
-    let event_loop = EventLoop::new()?;
-    event_loop.set_control_flow(ControlFlow::Poll);
+    ui_manager: Option<UIManager>,
+    compute_pass: Option<ComputePathTracePass>,
+    post_process_pass: Option<PostProcessPass>,
+
+    settings: AppSettings,
+}
 
 pub async fn new_application() -> anyhow::Result<ApplicationWindowHandler> {
     Ok(ApplicationWindowHandler {
