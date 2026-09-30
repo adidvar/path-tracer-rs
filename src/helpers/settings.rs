@@ -1,8 +1,16 @@
 use crate::CameraDto;
 
+#[derive(Debug, PartialEq)]
+pub enum SurfaceMode {
+    UNorm,
+    Linear,
+    HDR,
+}
+
 pub struct AppSettings {
-    pub enable_tonemapping: bool,
-    pub enable_gamma: bool,
+    pub surface_mode: SurfaceMode,
+    pub surface_dirty: bool,
+
     pub time: f32,
 
     pub render_scene: String,
@@ -18,8 +26,6 @@ pub struct AppSettings {
 impl AppSettings {
     pub fn default() -> AppSettings {
         AppSettings {
-            enable_tonemapping: true,
-            enable_gamma: false,
             time: 0.0,
             render_scene: "scene".to_owned(),
             camera: CameraDto::default(),
@@ -27,8 +33,10 @@ impl AppSettings {
             max_bounces: 4,
             global_light_intensity: 1.0,
             rays_per_pixel: 1,
-            use_msaa: false,
+            use_msaa: true,
             render_time_ms: 0.0,
+            surface_mode: SurfaceMode::UNorm,
+            surface_dirty: false,
         }
     }
 }

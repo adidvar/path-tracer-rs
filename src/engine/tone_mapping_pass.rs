@@ -1,11 +1,14 @@
-use crate::{ASSETS_DIR, AppSettings, RenderPass, WGPUApplicationContext, WGPUPassContext};
+use crate::{
+    ASSETS_DIR, AppSettings, RenderPass, SurfaceMode, WGPUApplicationContext, WGPUPassContext,
+};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct PostProcessParams {
-    enable_tonemapping: u32,
-    enable_gamma: u32,
-    _padding: [u32; 2],
+    enable_unorm: u32,
+    enable_srgb: u32,
+    enable_hdr: u32,
+    mac_peak_brightness: f32,
 }
 
 pub struct PostProcessPass {
@@ -125,9 +128,10 @@ impl RenderPass for PostProcessPass {
         };
 
         let params = PostProcessParams {
-            enable_tonemapping: if state.enable_tonemapping { 1 } else { 0 },
-            enable_gamma: if state.enable_gamma { 1 } else { 0 },
-            _padding: [0; 2],
+            enable_unorm: (state.surface_mode == SurfaceMode::UNorm) as u32,
+            enable_srgb: (state.surface_mode == SurfaceMode::Linear) as u32,
+            enable_hdr: (state.surface_mode == SurfaceMode::HDR) as u32,
+            mac_peak_brightness: 4.0,
         };
 
         ctx.app

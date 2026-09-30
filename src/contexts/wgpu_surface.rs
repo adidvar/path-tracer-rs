@@ -2,9 +2,27 @@ use anyhow::Context;
 use egui_wgpu::RendererOptions;
 use log::info;
 use std::sync::Arc;
+use wgpu::TextureFormat;
 use winit::window::Window;
 
-use crate::WGPUApplicationContext;
+use crate::{SurfaceMode, WGPUApplicationContext};
+
+#[derive(Clone)]
+pub struct WGPUSupportedSufraces {
+    pub unorm: Option<TextureFormat>,
+    pub srgb: Option<TextureFormat>,
+    pub hdr: Option<TextureFormat>,
+}
+
+impl WGPUSupportedSufraces {
+    pub fn get_texture_format(self, mode: &SurfaceMode) -> TextureFormat {
+        match mode {
+            SurfaceMode::UNorm => self.unorm.unwrap(),
+            SurfaceMode::Linear => self.srgb.unwrap(),
+            SurfaceMode::HDR => self.hdr.unwrap(),
+        }
+    }
+}
 
 pub struct WGPUWindowContext {
     pub surface: wgpu::Surface<'static>,
@@ -12,12 +30,14 @@ pub struct WGPUWindowContext {
     pub state: egui_winit::State,
     pub renderer: egui_wgpu::Renderer,
     pub surface_configuration: wgpu::SurfaceConfiguration,
+    pub surface_formates: WGPUSupportedSufraces,
 }
 
 impl WGPUWindowContext {
     pub fn new(
         context: &WGPUApplicationContext,
         window: Window,
+        prefered_surface: Option<TextureFormat>,
     ) -> anyhow::Result<WGPUWindowContext> {
         let window = Arc::new(window);
         let surface = context
@@ -42,8 +62,18 @@ impl WGPUWindowContext {
             .formats
             .iter()
             .copied()
-            .find(|f| f.is_srgb())
-            .unwrap_or(surface_caps.formats[0]);
+            .collect::<Vec<TextureFormat>>();
+
+        let supported_sufraces = WGPUSupportedSufraces {
+            unorm: texture_format.iter().find(|e| !e.is_srgb()).copied(),
+            srgb: texture_format.iter().find(|e| e.is_srgb()).copied(),
+            hdr: texture_format
+                .iter()
+                .find(|&&e| e == TextureFormat::Rgba16Float)
+                .copied(),
+        };
+
+        let texture_format = prefered_surface.unwrap_or(supported_sufraces.unorm.unwrap());
 
         info!("Selected surface format: {:?}", texture_format);
 
@@ -74,6 +104,7 @@ impl WGPUWindowContext {
             state,
             renderer,
             surface_configuration,
+            surface_formates: supported_sufraces,
         })
     }
 }

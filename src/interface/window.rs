@@ -3,7 +3,7 @@ use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::*;
-use winit::window::WindowId;
+use winit::window::{Window, WindowId};
 
 use crate::*;
 
@@ -56,44 +56,59 @@ pub fn spawn_application(mut application: ApplicationWindowHandler) -> anyhow::R
     Ok(())
 }
 
+pub fn create_window(event_loop: &ActiveEventLoop) -> Window {
+    #[allow(unused_mut)]
+    let mut attributes = window_attributes(WINDOW_START_SIZE, WINDOW_START_TITLE);
+    event_loop.create_window(attributes).unwrap()
+}
+
+impl ApplicationWindowHandler {
+    fn start_up(&mut self, event_loop: &ActiveEventLoop) {
+        let supported_surfaces = self.window.as_ref().map(|e| e.surface_formates.clone());
+        let prefered_surface =
+            supported_surfaces.map(|e| e.get_texture_format(&self.settings.surface_mode));
+
+        let w_ctx =
+            WGPUWindowContext::new(&self.context, create_window(event_loop), prefered_surface)
+                .unwrap();
+        let ui_m = UIManager::new(&self.context, &w_ctx);
+
+        let width = w_ctx.surface_configuration.width;
+        let height = w_ctx.surface_configuration.height;
+        let format = w_ctx.surface_configuration.format;
+
+        let compute_p = ComputePathTracePass::new(
+            &self.context,
+            width,
+            height,
+            &GpuSceneData::from_dto(&load_scene_into_settings(&mut self.settings), width, height),
+        );
+        let mut post_p = PostProcessPass::new(&self.context, format);
+
+        post_p.update_bind_group(&self.context.device, compute_p.get_view());
+
+        self.window = Some(w_ctx);
+        self.ui_manager = Some(ui_m);
+        self.compute_pass = Some(compute_p);
+        self.post_process_pass = Some(post_p);
+    }
+}
+
 impl ApplicationHandler for ApplicationWindowHandler {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
-            #[allow(unused_mut)]
-            let mut attributes = window_attributes(WINDOW_START_SIZE, WINDOW_START_TITLE);
-            let window_obj = event_loop.create_window(attributes).unwrap();
-
-            let w_ctx = WGPUWindowContext::new(&self.context, window_obj).unwrap();
-            let ui_m = UIManager::new(&self.context, &w_ctx);
-
-            let width = w_ctx.surface_configuration.width;
-            let height = w_ctx.surface_configuration.height;
-            let format = w_ctx.surface_configuration.format;
-
-            let compute_p = ComputePathTracePass::new(
-                &self.context,
-                width,
-                height,
-                &GpuSceneData::from_dto(
-                    &load_scene_into_settings(&mut self.settings),
-                    width,
-                    height,
-                ),
-            );
-            let mut post_p = PostProcessPass::new(&self.context, format);
-
-            post_p.update_bind_group(&self.context.device, compute_p.get_view());
-
-            self.window = Some(w_ctx);
-            self.ui_manager = Some(ui_m);
-            self.compute_pass = Some(compute_p);
-            self.post_process_pass = Some(post_p);
+            self.start_up(event_loop);
         }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         if self.window.is_none() {
             return;
+        }
+
+        if self.settings.surface_dirty {
+            self.start_up(event_loop);
+            self.settings.surface_dirty = false;
         }
 
         let w_ctx = self.window.as_mut().unwrap();

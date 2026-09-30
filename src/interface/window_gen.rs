@@ -1,13 +1,33 @@
-use crate::AppSettings;
+use crate::{AppSettings, SurfaceMode};
 
 pub fn generate_window_interface(context: &egui::Context, settings: &mut AppSettings) {
     egui::Window::new("Render Settings").show(context, |ui| {
+        ui.heading("Surface Parameters");
+
+        egui::ComboBox::from_label("Select surface mode")
+            .selected_text(format!("{:?}", settings.surface_mode))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(&mut settings.surface_mode, SurfaceMode::UNorm, "UNorm")
+                    .changed()
+                {
+                    settings.surface_dirty = true;
+                }
+                if ui
+                    .selectable_value(&mut settings.surface_mode, SurfaceMode::Linear, "Linear")
+                    .changed()
+                {
+                    settings.surface_dirty = true;
+                }
+                if ui
+                    .selectable_value(&mut settings.surface_mode, SurfaceMode::HDR, "HDR")
+                    .changed()
+                {
+                    settings.surface_dirty = true;
+                }
+            });
+
         ui.heading("Image Parameters");
-
-        ui.checkbox(&mut settings.enable_tonemapping, "Enable Tonemapping");
-        ui.checkbox(&mut settings.enable_gamma, "Enable Gamma Correction");
-
-        ui.separator();
 
         ui.add(egui::Slider::new(&mut settings.time, 0.0..=100.0).text("Time (s)"));
         if ui
