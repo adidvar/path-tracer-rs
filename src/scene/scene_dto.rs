@@ -1,11 +1,21 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub type Vec3 = [f32; 3];
+pub type Vec3Dto = [f32; 3];
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TransformDto {
+    #[serde(default)]
+    pub scale: Option<f32>,
+    #[serde(default)]
+    pub rotation: Option<Vec3Dto>,
+    #[serde(default)]
+    pub position: Option<Vec3Dto>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MaterialDto {
-    pub diffuse: Vec3,
+    pub diffuse: Vec3Dto,
     #[serde(default)]
     pub light_power: f32,
     #[serde(default)]
@@ -16,40 +26,36 @@ pub struct MaterialDto {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SphereDto {
-    pub position: Vec3,
-    pub radius: f32,
-    pub material_id: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PlaneDto {
-    pub position: Vec3,
-    pub normal: Vec3,
+    pub transform: Option<TransformDto>,
     pub material_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TriangleDto {
-    pub v0: Vec3,
-    pub v1: Vec3,
-    pub v2: Vec3,
-    pub normal: Vec3,
+    pub vertex: [Vec3Dto; 3],
+    pub normal: Vec3Dto,
     pub material_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MeshDto {
-    pub position: Vec3,
-    pub scale: f32,
+    pub triangles: Vec<TriangleDto>,
+    pub material_id: String,
+    pub transform: Option<TransformDto>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileMeshDto {
     pub file_name: String,
     pub material_id: String,
+    pub transform: Option<TransformDto>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(default)]
 pub struct CameraDto {
-    pub position: Vec3,
-    pub rotation_angles: Vec3,
+    pub position: Vec3Dto,
+    pub rotation_angles: Vec3Dto,
     pub fov: f32,
 
     pub aperture: f32,
@@ -74,9 +80,8 @@ pub struct SceneDto {
     pub camera: CameraDto,
     pub materials: HashMap<String, MaterialDto>,
     pub spheres: Vec<SphereDto>,
-    pub planes: Vec<PlaneDto>,
-    pub triangles: Vec<TriangleDto>,
     pub meshes: Vec<MeshDto>,
+    pub file_meshes: Vec<FileMeshDto>,
 }
 
 impl Default for SceneDto {
@@ -85,9 +90,8 @@ impl Default for SceneDto {
             camera: CameraDto::default(),
             materials: HashMap::new(),
             spheres: Vec::new(),
-            planes: Vec::new(),
-            triangles: Vec::new(),
             meshes: Vec::new(),
+            file_meshes: Vec::new(),
         }
     }
 }

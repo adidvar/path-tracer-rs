@@ -1,8 +1,9 @@
+use bytemuck::Zeroable;
 use wgpu::util::DeviceExt;
 
 use crate::{
-    ASSETS_DIR, AppSettings, GlobalParamsGpu, GpuSceneData, RenderPass, WGPUApplicationContext,
-    WGPUPassContext,
+    ASSETS_DIR, AppSettings, GlobalParamsGpu, GpuSceneData, RenderPass, TriangleGpu,
+    WGPUApplicationContext, WGPUPassContext,
 };
 
 pub struct ComputePathTracePass {
@@ -15,13 +16,12 @@ pub struct ComputePathTracePass {
     bind_group_scene: wgpu::BindGroup,
     width: u32,
     height: u32,
-
     frame_count: u32,
     global_params_buf: wgpu::Buffer,
     camera_buf: wgpu::Buffer,
     _materials_buf: wgpu::Buffer,
     _spheres_buf: wgpu::Buffer,
-    _planes_buf: wgpu::Buffer,
+    _triangles_buf: wgpu::Buffer,
     accum_buf: wgpu::Buffer,
 }
 
@@ -60,9 +60,16 @@ impl ComputePathTracePass {
             usage: wgpu::BufferUsages::STORAGE,
         });
 
-        let planes_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Planes Buffer"),
-            contents: bytemuck::cast_slice(&gpu_scene.planes),
+        let empty_triangles = [TriangleGpu::zeroed()];
+        let triangles_contents: &[u8] = if gpu_scene.triangles.is_empty() {
+            bytemuck::cast_slice(&empty_triangles)
+        } else {
+            bytemuck::cast_slice(&gpu_scene.triangles)
+        };
+
+        let triangles_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Triangles Buffer"),
+            contents: triangles_contents,
             usage: wgpu::BufferUsages::STORAGE,
         });
 
@@ -172,7 +179,7 @@ impl ComputePathTracePass {
             &camera_buf,
             &materials_buf,
             &spheres_buf,
-            &planes_buf,
+            &triangles_buf,
         );
 
         let shader_file = ASSETS_DIR
@@ -217,7 +224,7 @@ impl ComputePathTracePass {
             camera_buf,
             _materials_buf: materials_buf,
             _spheres_buf: spheres_buf,
-            _planes_buf: planes_buf,
+            _triangles_buf: triangles_buf,
             accum_buf,
         }
     }
@@ -274,7 +281,7 @@ impl ComputePathTracePass {
         camera_buf: &wgpu::Buffer,
         materials_buf: &wgpu::Buffer,
         spheres_buf: &wgpu::Buffer,
-        planes_buf: &wgpu::Buffer,
+        triangles_buf: &wgpu::Buffer,
     ) -> wgpu::BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Path Trace Scene Bind Group"),
@@ -298,7 +305,7 @@ impl ComputePathTracePass {
                 },
                 wgpu::BindGroupEntry {
                     binding: 4,
-                    resource: planes_buf.as_entire_binding(),
+                    resource: triangles_buf.as_entire_binding(),
                 },
             ],
         })

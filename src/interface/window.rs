@@ -77,11 +77,16 @@ impl ApplicationWindowHandler {
         let height = w_ctx.surface_configuration.height;
         let format = w_ctx.surface_configuration.format;
 
+        let (scene, camera) = load_scene(self.settings.render_scene.as_ref());
+
+        self.settings.camera = camera;
+        self.settings.camera_dirty = true;
+
         let compute_p = ComputePathTracePass::new(
             &self.context,
             width,
             height,
-            &GpuSceneData::from_dto(&load_scene_into_settings(&mut self.settings), width, height),
+            &GpuSceneData::from_dto(&scene, width, height),
         );
         let mut post_p = PostProcessPass::new(&self.context, format);
 

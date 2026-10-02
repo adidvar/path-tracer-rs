@@ -1,8 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use glam::{EulerRot, Quat, Vec3};
-use std::collections::HashMap;
 
-use crate::{CameraDto, SceneDto};
+use crate::{CameraDto, Scene};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -50,11 +49,17 @@ pub struct SphereGpu {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct PlaneGpu {
-    pub position: [f32; 3],
-    pub _padding1: u32,
-    pub normal: [f32; 3],
+pub struct TriangleGpu {
+    pub v0: [f32; 3],
+    pub n0_x: f32,
+    pub v1: [f32; 3],
+    pub n0_y: f32,
+    pub v2: [f32; 3],
+    pub n0_z: f32,
+    pub n1: [f32; 3],
     pub material_index: u32,
+    pub n2: [f32; 3],
+    pub _padding: u32,
 }
 
 pub struct GpuSceneData {
@@ -62,24 +67,22 @@ pub struct GpuSceneData {
     pub camera: CameraGpu,
     pub materials: Vec<MaterialGpu>,
     pub spheres: Vec<SphereGpu>,
-    pub planes: Vec<PlaneGpu>,
+    pub triangles: Vec<TriangleGpu>,
 }
 
 impl GpuSceneData {
-    pub fn from_dto(dto: &SceneDto, width: u32, height: u32) -> Self {
-        let mut materials = Vec::new();
-        let mut mat_indices = HashMap::new();
-
-        for (name, mat_dto) in &dto.materials {
-            mat_indices.insert(name.clone(), materials.len() as u32);
-            materials.push(MaterialGpu {
-                diffuse: mat_dto.diffuse,
-                light_power: mat_dto.light_power,
-                glossiness: mat_dto.glossiness,
-                specular: mat_dto.specular,
+    pub fn from_dto(dto: &Scene, width: u32, height: u32) -> Self {
+        let mut materials: Vec<MaterialGpu> = dto
+            .materials
+            .iter()
+            .map(|m| MaterialGpu {
+                diffuse: m.diffuse,
+                light_power: m.light_power,
+                glossiness: m.glossiness,
+                specular: m.specular,
                 _padding: [0.0; 2],
-            });
-        }
+            })
+            .collect();
 
         if materials.is_empty() {
             materials.push(MaterialGpu {
@@ -91,21 +94,35 @@ impl GpuSceneData {
             });
         }
 
-        let spheres = dto
+        let spheres: Vec<SphereGpu> = dto
             .spheres
             .iter()
-            .map(|s| {
-                let mat_idx = *mat_indices.get(&s.material_id).unwrap_or(&0);
-                SphereGpu {
-                    position: s.position,
-                    radius: s.radius,
-                    material_index: mat_idx,
-                    _padding: [0; 3],
-                }
+            .map(|s| SphereGpu {
+                position: s.0.into(),
+                radius: s.1,
+                material_index: s.2,
+                _padding: [0; 3],
             })
             .collect();
 
-        let camera = Self::build_camera_gpu(&dto.camera);
+        let triangles: Vec<TriangleGpu> = dto
+            .triangles
+            .iter()
+            .map(|t| TriangleGpu {
+                v0: t.0[0].into(),
+                n0_x: t.1[0].x,
+                v1: t.0[1].into(),
+                n0_y: t.1[0].y,
+                v2: t.0[2].into(),
+                n0_z: t.1[0].z,
+                n1: t.1[1].into(),
+                material_index: t.2,
+                n2: t.1[2].into(),
+                _padding: 0,
+            })
+            .collect();
+
+        let camera = Self::camera_gpu_from_dto(&CameraDto::default());
 
         let global_params = GlobalParamsGpu {
             resolution: [width, height],
@@ -117,31 +134,13 @@ impl GpuSceneData {
             _padding: [0; 1],
         };
 
-        let planes = dto
-            .planes
-            .iter()
-            .map(|p| {
-                let mat_idx = *mat_indices.get(&p.material_id).unwrap_or(&0);
-                PlaneGpu {
-                    position: p.position,
-                    _padding1: 0,
-                    normal: p.normal,
-                    material_index: mat_idx,
-                }
-            })
-            .collect();
-
         Self {
             global_params,
             camera,
             materials,
             spheres,
-            planes,
+            triangles,
         }
-    }
-
-    fn build_camera_gpu(cam_dto: &CameraDto) -> CameraGpu {
-        Self::camera_gpu_from_dto(cam_dto)
     }
 
     pub fn camera_gpu_from_dto(cam: &CameraDto) -> CameraGpu {
